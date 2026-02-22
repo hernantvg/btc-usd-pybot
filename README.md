@@ -1,4 +1,4 @@
-# 🤖 BTC/USD PyBot - Quant Terminal (V7.4)
+# 🤖 BTC/USD PyBot - Python and Metatrader 5 Bitcoin Bot
 
 🇪🇸 [Versión en Español](#español) | 🇬🇧 [English Version](#english)
 
