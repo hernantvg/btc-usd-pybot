@@ -9,6 +9,8 @@
 
 **BTC/USD PyBot** es un bot de trading algorítmico automatizado diseñado específicamente para el par BTC/USD en MetaTrader 5. Utiliza una interfaz gráfica moderna (GUI) y emplea una estrategia de "Grid Trading" basada en la reversión a la media mediante Bandas de Bollinger y RSI.
 
+![Interfaz del BTC/USD PyBot](screenshots/1.jpg)
+
 ### ✨ Características Principales
 * **Estrategia Cuantitativa:** Entradas precisas usando Bandas de Bollinger (desviación 2.0) y RSI en temporalidad M15.
 * **Grid Trading Seguro:** Distanciamiento de operaciones basado en dólares exactos (no puntos), ideal para la volatilidad de las criptomonedas.
@@ -55,6 +57,8 @@ python run.py
 ## 🇬🇧 English
 
 **BTC/USD PyBot** is an automated algorithmic trading bot designed specifically for the BTC/USD pair on MetaTrader 5. It features a modern graphical user interface (GUI) and employs a "Grid Trading" strategy based on mean reversion using Bollinger Bands and RSI.
+
+![Interfaz del BTC/USD PyBot](screenshots/1.jpg)
 
 ### ✨ Key Features
 * **Quantitative Strategy:** Precise entries using Bollinger Bands (2.0 dev) and RSI on the M15 timeframe.
