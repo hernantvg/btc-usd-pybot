@@ -26,7 +26,7 @@
 2. **Instalar Python:** Asegúrate de tener Python 3.9 o superior instalado.
 3. **Clonar el repositorio y preparar el entorno:**
    ```bash
-   git clone [https://github.com/TU_USUARIO/btc-usd-pybot.git](https://github.com/TU_USUARIO/btc-usd-pybot.git)
+   git clone [https://github.com/hernantvg/btc-usd-pybot.git](https://github.com/hernantvg/btc-usd-pybot.git)
    cd btc-usd-pybot
    pip install -r requirements.txt
    ```
@@ -45,7 +45,7 @@ TELEGRAM_CHAT_ID=tu_chat_id
 ### 🚀 Uso
 Abre tu terminal de MetaTrader 5 (asegúrate de que el botón "Algo Trading" esté activado) y ejecuta el bot:
 ```bash
-python main.py
+python run.py
 ```
 *(Haz clic en "INICIAR" en la interfaz gráfica para que el algoritmo comience a analizar el mercado).*
 
@@ -92,7 +92,7 @@ TELEGRAM_CHAT_ID=your_chat_id
 ### 🚀 Usage
 Open your MetaTrader 5 terminal (ensure the "Algo Trading" button is enabled) and run the bot:
 ```bash
-python main.py
+python run.py
 ```
 *(Click "START" on the graphical interface to allow the algorithm to begin analyzing the market).*
 
