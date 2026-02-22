@@ -102,7 +102,7 @@ RSI_LOWER = 45
 BB_PERIOD = 20
 BB_DEV = 2.0             
 
-MAX_SPREAD = 15000       
+MAX_SPREAD = 2500       
 MAGIC_NUMBER = 777000
 
 load_dotenv()
