@@ -100,7 +100,7 @@ ACTIVATION_PROFIT_BASKET = 5.00  # Dinero al que se activa el rastreo
 TRAILING_STEP_USD = 2.00         # Cuánto le permitimos retroceder antes de cerrar
 STOP_LOSS_GLOBAL = -100.00   
 
-# --- ESTRATEGIA TÉCNICA (PERMISIVA Y CORREGIDA) ---
+# --- ESTRATEGIA TÉCNICA ---
 RSI_PERIOD = 14          
 RSI_UPPER = 55           
 RSI_LOWER = 45           
