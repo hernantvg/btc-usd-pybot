@@ -1,0 +1,21 @@
+# Credenciales y variables de entorno (¡MUY IMPORTANTE!)
+.env
+
+# Entornos virtuales de Python
+venv/
+env/
+.venv/
+env.bak/
+venv.bak/
+
+# Archivos compilados de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos de registro (Logs) generados por el bot
+*.log
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
