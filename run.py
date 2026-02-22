@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 LANG = {
     "es": {
         "title": "BTC/USD PyBot - Terminal Cuantitativa",
-        "header": "BTC/USD PyBot (V7.4 - Lógica Corregida)",
+        "header": "BTC/USD PyBot (V7.5 - Trailing Profit)",
         "status_active": "SISTEMA ACTIVO 🟢",
         "status_stopped": "DETENIDO ⚪",
         "btn_start": "INICIAR",
@@ -32,8 +32,10 @@ LANG = {
         "log_err_init": "❌ Error MT5 Init: {err}",
         "log_err_login": "❌ Error Login: {err}",
         "log_err_symbol": "❌ Error: No se encuentra el símbolo {symbol}",
-        "log_basket_buy": "💰 CERRANDO BASKET COMPRAS | Beneficio: ${profit:.2f}",
-        "log_basket_sell": "💰 CERRANDO BASKET VENTAS | Beneficio: ${profit:.2f}",
+        "log_trail_act_buy": "🎯 Trailing Profit ACTIVADO en Compras | Asegurando ganancias...",
+        "log_trail_act_sell": "🎯 Trailing Profit ACTIVADO en Ventas | Asegurando ganancias...",
+        "log_basket_buy": "💰 CERRANDO BASKET COMPRAS (Trailing) | Beneficio final: ${profit:.2f}",
+        "log_basket_sell": "💰 CERRANDO BASKET VENTAS (Trailing) | Beneficio final: ${profit:.2f}",
         "log_panic": "💀 STOP LOSS GLOBAL ALCANZADO. CERRANDO TODAS LAS POSICIONES.",
         "log_stats": "📊 [M15] Precio:{p:.2f} | RSI:{rsi:.2f} | BBLow:{bblow:.2f} | BBUp:{bbup:.2f}",
         "log_eval_buy": "   -> Eval Compra: Cerca BBLow({c1}) AND RSI<{rsilow}({c2})",
@@ -50,7 +52,7 @@ LANG = {
     },
     "en": {
         "title": "BTC/USD PyBot - Quant Terminal",
-        "header": "BTC/USD PyBot (V7.4 - Fixed Logic)",
+        "header": "BTC/USD PyBot (V7.5 - Trailing Profit)",
         "status_active": "SYSTEM ACTIVE 🟢",
         "status_stopped": "STOPPED ⚪",
         "btn_start": "START",
@@ -66,8 +68,10 @@ LANG = {
         "log_err_init": "❌ MT5 Init Error: {err}",
         "log_err_login": "❌ Login Error: {err}",
         "log_err_symbol": "❌ Error: Symbol {symbol} not found",
-        "log_basket_buy": "💰 CLOSING BUY BASKET | Profit: ${profit:.2f}",
-        "log_basket_sell": "💰 CLOSING SELL BASKET | Profit: ${profit:.2f}",
+        "log_trail_act_buy": "🎯 Trailing Profit ACTIVATED for Buys | Locking in gains...",
+        "log_trail_act_sell": "🎯 Trailing Profit ACTIVATED for Sells | Locking in gains...",
+        "log_basket_buy": "💰 CLOSING BUY BASKET (Trailing) | Final Profit: ${profit:.2f}",
+        "log_basket_sell": "💰 CLOSING SELL BASKET (Trailing) | Final Profit: ${profit:.2f}",
         "log_panic": "💀 GLOBAL STOP LOSS HIT. CLOSING ALL POSITIONS.",
         "log_stats": "📊 [M15] Price:{p:.2f} | RSI:{rsi:.2f} | BBLow:{bblow:.2f} | BBUp:{bbup:.2f}",
         "log_eval_buy": "   -> Eval Buy : Near BBLow({c1}) AND RSI<{rsilow}({c2})",
@@ -89,10 +93,11 @@ SYMBOL = "BTCUSD"
 TIMEFRAME = mt5.TIMEFRAME_M15    
 VOLUME = 0.10            
 MAX_POSITIONS = 6        
-GRID_DISTANCE_USD = 1.0 
+GRID_DISTANCE_USD = 2.0 
 
-# --- REGLAS DE DINERO (GLOBALES) ---
-TARGET_PROFIT_BASKET = 5.00  
+# --- REGLAS DE DINERO (TRAILING PROFIT) ---
+ACTIVATION_PROFIT_BASKET = 5.00  # Dinero al que se activa el rastreo
+TRAILING_STEP_USD = 2.00         # Cuánto le permitimos retroceder antes de cerrar
 STOP_LOSS_GLOBAL = -100.00   
 
 # --- ESTRATEGIA TÉCNICA (PERMISIVA Y CORREGIDA) ---
@@ -102,7 +107,7 @@ RSI_LOWER = 45
 BB_PERIOD = 20
 BB_DEV = 2.0             
 
-MAX_SPREAD = 2500       
+MAX_SPREAD = 15000       
 MAGIC_NUMBER = 777000
 
 load_dotenv()
@@ -128,20 +133,20 @@ class PyBotBTC:
             ("IOC", mt5.ORDER_FILLING_IOC),
             ("RETURN", mt5.ORDER_FILLING_RETURN)
         ]
+        
+        # Variables de estado para el Trailing Profit
+        self.max_profit_buy = 0.0
+        self.trailing_buy_active = False
+        self.max_profit_sell = 0.0
+        self.trailing_sell_active = False
 
     def send_telegram(self, message):
-        """Envía un mensaje a Telegram de forma asíncrona para no bloquear el bot"""
-        if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-            return 
-
+        if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID: return 
         def _send():
             url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
             payload = {"chat_id": TELEGRAM_CHAT_ID, "text": f"🤖 PyBot BTC:\n{message}"}
-            try:
-                requests.post(url, json=payload, timeout=5)
-            except Exception as e:
-                self.log_raw(f"⚠️ Aviso: Falló el envío a Telegram ({e})", "info")
-
+            try: requests.post(url, json=payload, timeout=5)
+            except Exception as e: self.log_raw(f"⚠️ Aviso: Falló el envío a Telegram ({e})", "info")
         threading.Thread(target=_send, daemon=True).start()
 
     def set_language(self, lang_code):
@@ -175,9 +180,7 @@ class PyBotBTC:
                 self.text_widget.see(tk.END)
             except: pass
         self.app.after(0, _write)
-        
-        if send_tg:
-            self.send_telegram(msg)
+        if send_tg: self.send_telegram(msg)
 
     def log_raw(self, msg, tag=None):
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -218,7 +221,6 @@ class PyBotBTC:
         if not mt5.symbol_select(SYMBOL, True):
             self.log("log_err_symbol", tag="error", symbol=SYMBOL)
             return False
-        
         self.log("log_conn_ok", tag="profit", send_tg=True, symbol=SYMBOL) 
         return True
 
@@ -226,24 +228,20 @@ class PyBotBTC:
         rates = mt5.copy_rates_from_pos(SYMBOL, TIMEFRAME, 0, 300)
         if rates is None or len(rates) < 300: return None
         df = pd.DataFrame(rates)
-        
         delta = df['close'].diff()
         gain = delta.clip(lower=0).ewm(alpha=1/RSI_PERIOD, min_periods=RSI_PERIOD).mean()
         loss = -delta.clip(upper=0).ewm(alpha=1/RSI_PERIOD, min_periods=RSI_PERIOD).mean()
         rs = gain / loss
         df['RSI'] = 100 - (100 / (1 + rs))
-        
         sma = df['close'].rolling(window=BB_PERIOD).mean()
         std = df['close'].rolling(window=BB_PERIOD).std()
         df['BB_Up'] = sma + (std * BB_DEV)
         df['BB_Low'] = sma - (std * BB_DEV)
-
         return df.iloc[-1]
 
     def close_position(self, ticket):
         positions = mt5.positions_get(ticket=ticket)
-        if not positions:
-            return False
+        if not positions: return False
         pos = positions[0]
         tick = mt5.symbol_info_tick(SYMBOL)
         if not tick: return False
@@ -265,11 +263,8 @@ class PyBotBTC:
             if result.retcode == mt5.TRADE_RETCODE_DONE:
                 self.log("log_close_ok", tag="profit", ticket=ticket, modo=mode_name)
                 return True
-            elif result.retcode == 10030:
-                continue
-            else:
-                break
-
+            elif result.retcode == 10030: continue
+            else: break
         self.log("log_close_err", tag="error", ticket=ticket, cmt=result.comment, code=result.retcode)
         return False
 
@@ -329,10 +324,8 @@ class PyBotBTC:
             if result.retcode == mt5.TRADE_RETCODE_DONE:
                 self.log("log_order_ok", tag="trade", send_tg=True, tipo=tipo_str, precio=price, ticket=result.order)
                 return 
-            elif result.retcode == 10030: 
-                continue 
-            else:
-                break 
+            elif result.retcode == 10030: continue 
+            else: break 
 
         if result and result.retcode != mt5.TRADE_RETCODE_DONE:
             self.log("log_order_err", tag="error", cmt=result.comment, code=result.retcode)
@@ -356,27 +349,62 @@ class PyBotBTC:
                 buys, sells, float_profit = self.get_positions_summary()
                 self.update_dashboard(len(buys) + len(sells), float_profit, spread)
 
-                # --- GESTIÓN DE SALIDA (BASKET) ---
+                # --- GESTIÓN DE SALIDA (TRAILING PROFIT) ---
                 profit_buy = sum([p.profit + p.swap for p in buys])
                 profit_sell = sum([p.profit + p.swap for p in sells])
 
-                if profit_buy >= TARGET_PROFIT_BASKET and buys:
-                    self.log("log_basket_buy", tag="profit", send_tg=True, profit=profit_buy)
-                    for p in buys: self.close_position(p.ticket)
-                    time.sleep(1)
+                # Reset de rastreo si no hay posiciones manuales o por cierre
+                if not buys:
+                    self.trailing_buy_active = False
+                    self.max_profit_buy = 0.0
+                if not sells:
+                    self.trailing_sell_active = False
+                    self.max_profit_sell = 0.0
 
-                if profit_sell >= TARGET_PROFIT_BASKET and sells:
-                    self.log("log_basket_sell", tag="profit", send_tg=True, profit=profit_sell)
-                    for p in sells: self.close_position(p.ticket)
-                    time.sleep(1)
+                # Lógica Trailing COMPRAS
+                if buys:
+                    if profit_buy >= ACTIVATION_PROFIT_BASKET:
+                        if not self.trailing_buy_active:
+                            self.trailing_buy_active = True
+                            self.max_profit_buy = profit_buy
+                            self.log("log_trail_act_buy", tag="info", send_tg=True)
+                        if profit_buy > self.max_profit_buy:
+                            self.max_profit_buy = profit_buy # Actualiza el pico máximo
 
+                    if self.trailing_buy_active:
+                        if profit_buy <= (self.max_profit_buy - TRAILING_STEP_USD):
+                            self.log("log_basket_buy", tag="profit", send_tg=True, profit=profit_buy)
+                            for p in buys: self.close_position(p.ticket)
+                            self.trailing_buy_active = False
+                            self.max_profit_buy = 0.0
+                            time.sleep(1)
+
+                # Lógica Trailing VENTAS
+                if sells:
+                    if profit_sell >= ACTIVATION_PROFIT_BASKET:
+                        if not self.trailing_sell_active:
+                            self.trailing_sell_active = True
+                            self.max_profit_sell = profit_sell
+                            self.log("log_trail_act_sell", tag="info", send_tg=True)
+                        if profit_sell > self.max_profit_sell:
+                            self.max_profit_sell = profit_sell # Actualiza el pico máximo
+
+                    if self.trailing_sell_active:
+                        if profit_sell <= (self.max_profit_sell - TRAILING_STEP_USD):
+                            self.log("log_basket_sell", tag="profit", send_tg=True, profit=profit_sell)
+                            for p in sells: self.close_position(p.ticket)
+                            self.trailing_sell_active = False
+                            self.max_profit_sell = 0.0
+                            time.sleep(1)
+
+                # Pánico Global
                 if float_profit <= STOP_LOSS_GLOBAL:
                     self.log("log_panic", tag="panic", send_tg=True)
                     self.emergency_close_all()
                     self.stop()
                     break
 
-                # --- GESTIÓN DE ENTRADA (CORREGIDA) ---
+                # --- GESTIÓN DE ENTRADA ---
                 if spread > MAX_SPREAD:
                     self.gui['lbl_spread_val'].configure(text_color="red")
                 else:
@@ -389,8 +417,6 @@ class PyBotBTC:
                         bb_low = data['BB_Low']
                         bb_up = data['BB_Up']
 
-                        # CORRECCIÓN DE LA PARADOJA: 
-                        # Ahora solo evaluamos Bollinger y RSI. Ignoramos la EMA.
                         buy_cond_1 = price < (bb_low * 1.001) 
                         buy_cond_2 = rsi < RSI_LOWER
                         
@@ -445,7 +471,6 @@ class PyBotBTC:
             self.gui['lbl_status'].configure(text=self._t("status_stopped"), text_color="gray")
             self.log("log_stop", tag="error", send_tg=True)
 
-
 # --- GUI SETUP ---
 app = ctk.CTk()
 app.geometry("850x650") 
@@ -454,7 +479,7 @@ gui_elements = {}
 head = ctk.CTkFrame(app, fg_color="transparent")
 head.pack(fill="x", padx=20, pady=10)
 
-gui_elements['lbl_header'] = ctk.CTkLabel(head, text="BTC/USD PyBot (V7.4)", font=("Arial", 20, "bold"))
+gui_elements['lbl_header'] = ctk.CTkLabel(head, text="BTC/USD PyBot (V7.5)", font=("Arial", 20, "bold"))
 gui_elements['lbl_header'].pack(side="left")
 
 lang_var = ctk.StringVar(value="es")
@@ -490,25 +515,19 @@ txt_log.tag_config("info", foreground="yellow")
 
 bot = PyBotBTC(app, txt_log, gui_elements)
 
-def change_lang_callback(choice):
-    bot.set_language(choice)
-
+def change_lang_callback(choice): bot.set_language(choice)
 lang_menu.configure(command=change_lang_callback)
 
 ctrl = ctk.CTkFrame(app, fg_color="transparent")
 ctrl.pack(pady=10)
 gui_elements['btn_start'] = ctk.CTkButton(ctrl, text="INICIAR", command=bot.start, fg_color="green")
 gui_elements['btn_start'].pack(side="left", padx=10)
-
 gui_elements['btn_stop'] = ctk.CTkButton(ctrl, text="DETENER", command=bot.stop, fg_color="red")
 gui_elements['btn_stop'].pack(side="left", padx=10)
-
 gui_elements['btn_close'] = ctk.CTkButton(ctrl, text="CERRAR TODO", command=bot.emergency_close_all, fg_color="orange")
 gui_elements['btn_close'].pack(side="left", padx=10)
-
 gui_elements['btn_export'] = ctk.CTkButton(ctrl, text="EXPORTAR LOG", command=bot.export_log, fg_color="#3b82f6")
 gui_elements['btn_export'].pack(side="left", padx=10)
 
 bot.set_language("es")
-
 app.mainloop()
