@@ -98,7 +98,7 @@ GRID_DISTANCE_USD = 2.0
 # --- REGLAS DE DINERO (TRAILING PROFIT) ---
 ACTIVATION_PROFIT_BASKET = 5.00  # Dinero al que se activa el rastreo
 TRAILING_STEP_USD = 2.00         # Cuánto le permitimos retroceder antes de cerrar
-STOP_LOSS_GLOBAL = -100.00   
+STOP_LOSS_GLOBAL = -500.00   
 
 # --- ESTRATEGIA TÉCNICA ---
 RSI_PERIOD = 14          
