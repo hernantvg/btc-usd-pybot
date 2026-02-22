@@ -87,7 +87,7 @@ LANG = {
 # --- CONFIGURACIÓN DE LA ESTRATEGIA GRID ---
 SYMBOL = "BTCUSD"        
 TIMEFRAME = mt5.TIMEFRAME_M15    
-VOLUME = 0.03            
+VOLUME = 0.10            
 MAX_POSITIONS = 6        
 GRID_DISTANCE_USD = 1.0 
 
