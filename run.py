@@ -45,8 +45,8 @@ TIMEFRAME_MAP = {
 # --- DICCIONARIO BILINGÜE (ES / EN) ---
 LANG = {
     "es": {
-        "title": "BTC/USD PyBot - Terminal Cuantitativa",
-        "header": "PyBot Crypto (V8.0 - Configurable)",
+        "title": "BTC/USD PyBot",
+        "header": "PyBot Crypto BTC/USD",
         "status_active": "SISTEMA ACTIVO 🟢",
         "status_stopped": "DETENIDO ⚪",
         "btn_start": "INICIAR ESTRATEGIA",
@@ -94,8 +94,8 @@ LANG = {
         "log_close_err": "❌ Error cerrando #{ticket}: {cmt} (Código: {code})"
     },
     "en": {
-        "title": "BTC/USD PyBot - Quant Terminal",
-        "header": "PyBot Crypto (V8.0 - Configurable)",
+        "title": "BTC/USD PyBot",
+        "header": "PyBot Crypto BTC/USD",
         "status_active": "SYSTEM ACTIVE 🟢",
         "status_stopped": "STOPPED ⚪",
         "btn_start": "START STRATEGY",
