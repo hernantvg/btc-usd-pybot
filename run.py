@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 # --- VALORES POR DEFECTO (CONFIGURABLES EN GUI) ---
 DEFAULTS = {
     "SYMBOL": "BTCUSD",
-    "TIMEFRAME": "D1",
+    "TIMEFRAME": "M15",
     "VOLUME": 0.10,
     "MAX_POSITIONS": 5,
     "GRID_DISTANCE": 2.0,
