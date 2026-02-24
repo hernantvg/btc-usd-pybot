@@ -6,22 +6,22 @@ import pandas as pd
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog, messagebox
-import customtkinter as ctk 
+import customtkinter as ctk
 from datetime import datetime
 import os
-import requests 
+import requests
 from dotenv import load_dotenv
 
 # --- VALORES POR DEFECTO (CONFIGURABLES EN GUI) ---
 DEFAULTS = {
     "SYMBOL": "BTCUSD",
     "TIMEFRAME": "M15",
-    "VOLUME": 0.10,
-    "MAX_POSITIONS": 5,
-    "GRID_DISTANCE": 2.0,
-    "ACTIVATION_PROFIT": 5.00,
-    "TRAILING_STEP": 2.00,
-    "STOP_LOSS": -200.00,
+    "VOLUME": 0.05,
+    "MAX_POSITIONS": 100,
+    "GRID_DISTANCE": 10.0,
+    "ACTIVATION_PROFIT": 10.00,
+    "TRAILING_STEP": 5.00,
+    "STOP_LOSS": -2000.00,
     "RSI_PERIOD": 14,
     "RSI_UPPER": 55,
     "RSI_LOWER": 45,
@@ -58,17 +58,24 @@ LANG = {
         "grp_grid": "Estrategia de Grid",
         "grp_risk": "Gestión de Riesgo & Dinero",
         "grp_tech": "Indicadores Técnicos",
-        "lbl_sym": "Símbolo", "lbl_tf": "Timeframe", "lbl_vol": "Lotes", 
-        "lbl_max_pos": "Max Posiciones", "lbl_grid_dist": "Distancia Grid ($)",
+        
+        # Etiquetas Config
+        "lbl_sym": "Símbolo", "lbl_tf": "Timeframe", "lbl_vol": "Lotes",
+        "lbl_max_pos": "Max Posiciones", "lbl_grid_dist": "Distancia Grid ($)", 
         "lbl_act_prof": "Trailing Start ($)", "lbl_trail_step": "Trailing Step ($)", 
-        "lbl_sl": "Stop Loss Global ($)", "lbl_rsi_per": "Período RSI", 
-        "lbl_rsi_up": "RSI Techo", "lbl_rsi_low": "RSI Piso",
+        "lbl_sl": "Global Stop Loss ($)", "lbl_spread": "Max Spread (pts)", "lbl_magic": "Magic Number",
+        "lbl_rsi_per": "Período RSI", "lbl_rsi_up": "RSI Techo", "lbl_rsi_low": "RSI Piso",
         "lbl_bb_per": "Período Bollinger", "lbl_bb_dev": "Desviación BB",
-        "lbl_spread": "Max Spread (pts)", "lbl_magic": "Magic Number",
+
+        # Dashboard Cards
+        "card_pos": "POSICIONES", 
+        "card_profit": "FLOTANTE GLOBAL",
+        "card_sess": "BENEFICIO SESIÓN",   # <--- NUEVO
+        "card_spread": "SPREAD",
+
+        # Logs
         "log_config_load": "⚙️ Configuración cargada correctamente. Iniciando...",
         "log_config_err": "❌ Error en configuración: {err}",
-        # ... (Logs anteriores mantenidos)
-        "card_pos": "POSICIONES", "card_profit": "BENEFICIO GLOBAL", "card_spread": "SPREAD",
         "log_init": "=== PyBot INICIADO ===",
         "log_stop": "=== PyBot DETENIDO ===",
         "log_conn_ok": "✅ Conectado exitosamente a {symbol}",
@@ -86,11 +93,11 @@ LANG = {
         "log_cond_ok": "⚡ CONDICIONES DE {tipo} CUMPLIDAS. Procesando lógica Grid...",
         "log_grid_max": "⚠️ Límite máximo de {max} posiciones alcanzado para {tipo}. Ignorando señal.",
         "log_grid_wait": "⏳ Esperando distancia Grid. Actual: ${dist:.2f} / Requerida: ${req:.2f}",
-        "log_order_try": "🔄 Intentando abrir orden de {tipo} a {precio}... (Comentario: {cmt})",
+        "log_order_try": "🔄 Intentando abrir orden {tipo} en {precio}... (Comentario: {cmt})",
         "log_fill_try": "   -> Probando modo de ejecución: {modo}",
         "log_order_ok": "🔥 ORDEN {tipo} ABIERTA | Precio: {precio} | Ticket: {ticket}",
         "log_order_err": "❌ Error abriendo orden: {cmt} (Código: {code})",
-        "log_close_ok": "✅ Posición #{ticket} cerrada correctamente (Modo: {modo})",
+        "log_close_ok": "✅ Posición #{ticket} cerrada exitosamente (Modo: {modo})",
         "log_close_err": "❌ Error cerrando #{ticket}: {cmt} (Código: {code})"
     },
     "en": {
@@ -99,24 +106,32 @@ LANG = {
         "status_active": "SYSTEM ACTIVE 🟢",
         "status_stopped": "STOPPED ⚪",
         "btn_start": "START STRATEGY",
-        "btn_stop": "STOP ENGINE",
+        "btn_stop": "STOP ENGINES",
         "btn_close_all": "PANIC: CLOSE ALL",
         "btn_export": "EXPORT LOG",
         "tab_monitor": "🖥️ Live Monitor",
-        "tab_config": "⚙️ Settings",
+        "tab_config": "⚙️ Configuration",
         "grp_grid": "Grid Strategy",
         "grp_risk": "Risk & Money Management",
         "grp_tech": "Technical Indicators",
-        "lbl_sym": "Symbol", "lbl_tf": "Timeframe", "lbl_vol": "Lots", 
+        
+        # Labels Config
+        "lbl_sym": "Symbol", "lbl_tf": "Timeframe", "lbl_vol": "Lots",
         "lbl_max_pos": "Max Positions", "lbl_grid_dist": "Grid Distance ($)",
-        "lbl_act_prof": "Trailing Start ($)", "lbl_trail_step": "Trailing Step ($)", 
-        "lbl_sl": "Global Stop Loss ($)", "lbl_rsi_per": "RSI Period", 
-        "lbl_rsi_up": "RSI Upper", "lbl_rsi_low": "RSI Lower",
+        "lbl_act_prof": "Trailing Start ($)", "lbl_trail_step": "Trailing Step ($)",
+        "lbl_sl": "Global Stop Loss ($)", "lbl_spread": "Max Spread (pts)", "lbl_magic": "Magic Number",
+        "lbl_rsi_per": "RSI Period", "lbl_rsi_up": "RSI Upper", "lbl_rsi_low": "RSI Lower",
         "lbl_bb_per": "BB Period", "lbl_bb_dev": "BB Deviation",
-        "lbl_spread": "Max Spread (pts)", "lbl_magic": "Magic Number",
+
+        # Dashboard Cards
+        "card_pos": "POSITIONS", 
+        "card_profit": "GLOBAL FLOATING", 
+        "card_sess": "SESSION PROFIT", # <--- NEW
+        "card_spread": "SPREAD",
+
+        # Logs
         "log_config_load": "⚙️ Configuration loaded successfully. Starting...",
         "log_config_err": "❌ Configuration Error: {err}",
-        "card_pos": "POSITIONS", "card_profit": "GLOBAL PROFIT", "card_spread": "SPREAD",
         "log_init": "=== PyBot STARTED ===",
         "log_stop": "=== PyBot STOPPED ===",
         "log_conn_ok": "✅ Successfully connected to {symbol}",
@@ -147,25 +162,29 @@ load_dotenv()
 ACCOUNT = int(os.getenv("ACCOUNT_NUMBER", "0"))
 PASSWORD = os.getenv("PASSWORD", "")
 SERVER = os.getenv("SERVER", "")
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "") 
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "") 
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
-ctk.set_appearance_mode("Dark")  
-ctk.set_default_color_theme("green") 
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("green")
 
 class PyBotBTC:
     def __init__(self, app):
         self.app = app
         self.running = False
-        self.lang = "es" 
+        self.lang = "es"
         self.last_log_time = 0
+        
+        # --- NUEVA VARIABLE PARA BENEFICIO SESION ---
+        self.session_profit = 0.0
+        # --------------------------------------------
+
         self.filling_modes = [
             ("FOK", mt5.ORDER_FILLING_FOK),
             ("IOC", mt5.ORDER_FILLING_IOC),
             ("RETURN", mt5.ORDER_FILLING_RETURN)
         ]
         
-        # Diccionario que almacenará la configuración activa al pulsar START
         self.config = {}
 
         # Variables Trailing
@@ -200,8 +219,10 @@ class PyBotBTC:
         self.dash = ctk.CTkFrame(self.tab_mon)
         self.dash.pack(fill="x", pady=5)
         
+        # --- CARDS DASHBOARD (SE AGREGA BENEFICIO SESION) ---
         self.lbl_title_pos, self.lbl_pos_val = self.create_card(self.dash, "card_pos", "0/0")
         self.lbl_title_float, self.lbl_float_val = self.create_card(self.dash, "card_profit", "$0.00")
+        self.lbl_title_sess, self.lbl_sess_val = self.create_card(self.dash, "card_sess", "$0.00") # <--- NUEVA CARD
         self.lbl_title_spread, self.lbl_spread_val = self.create_card(self.dash, "card_spread", "0")
 
         self.text_widget = ctk.CTkTextbox(self.tab_mon, font=("Consolas", 11))
@@ -283,8 +304,7 @@ class PyBotBTC:
         entry = ctk.CTkEntry(parent, placeholder_text=str(default_val))
         entry.insert(0, str(default_val))
         entry.grid(row=r, column=c+1, padx=10, pady=2, sticky="ew")
-        self.entries[config_key] = entry # Store reference
-        # Store label ref to update language later if needed (skipped for brevity)
+        self.entries[config_key] = entry 
 
     def get_config_from_gui(self):
         try:
@@ -336,6 +356,7 @@ class PyBotBTC:
         
         self.lbl_title_pos.configure(text=LANG[self.lang]["card_pos"])
         self.lbl_title_float.configure(text=LANG[self.lang]["card_profit"])
+        self.lbl_title_sess.configure(text=LANG[self.lang]["card_sess"]) # <--- ACTUALIZAR LABEL
         self.lbl_title_spread.configure(text=LANG[self.lang]["card_spread"])
 
     def _t(self, key, **kwargs):
@@ -422,6 +443,11 @@ class PyBotBTC:
         positions = mt5.positions_get(ticket=ticket)
         if not positions: return False
         pos = positions[0]
+        
+        # --- CAPTURAR BENEFICIO ANTES DE CERRAR ---
+        profit_amount = pos.profit + pos.swap
+        # ------------------------------------------
+
         tick = mt5.symbol_info_tick(symbol)
         if not tick: return False
 
@@ -441,6 +467,14 @@ class PyBotBTC:
             result = mt5.order_send(request)
             if result.retcode == mt5.TRADE_RETCODE_DONE:
                 self.log("log_close_ok", tag="profit", ticket=ticket, modo=mode_name)
+                
+                # --- SUMAR AL TOTAL DE LA SESION ---
+                self.session_profit += profit_amount
+                # Forzar actualización inmediata visual
+                color = "#2ea043" if self.session_profit >= 0 else "#f85149"
+                self.app.after(0, lambda: self.lbl_sess_val.configure(text=f"${self.session_profit:.2f}", text_color=color))
+                # -----------------------------------
+                
                 return True
             elif result.retcode == 10030: continue
             else: break
@@ -650,14 +684,19 @@ class PyBotBTC:
     def update_dashboard(self, count, profit, spread, max_pos):
         try:
             self.app.after(0, lambda: self.lbl_pos_val.configure(text=f"{count}/{max_pos}"))
-            color = "#2ea043" if profit >= 0 else "#f85149"
-            self.app.after(0, lambda: self.lbl_float_val.configure(text=f"${profit:.2f}", text_color=color))
+            
+            # Color flotante global
+            color_float = "#2ea043" if profit >= 0 else "#f85149"
+            self.app.after(0, lambda: self.lbl_float_val.configure(text=f"${profit:.2f}", text_color=color_float))
+            
+            # Color beneficio sesion (por consistencia)
+            color_sess = "#2ea043" if self.session_profit >= 0 else "#f85149"
+            self.app.after(0, lambda: self.lbl_sess_val.configure(text=f"${self.session_profit:.2f}", text_color=color_sess))
+
             self.app.after(0, lambda: self.lbl_spread_val.configure(text=f"{spread}"))
         except: pass
 
     def emergency_close_all(self):
-        # Para cerrar todo, necesitamos saber el simbolo activo, o cerrar todo lo de la cuenta
-        # Intentaremos usar la config si existe, sino, intentamos leer de la GUI o hardcode
         symbol = self.config.get("SYMBOL", self.entries["SYMBOL"].get().upper())
         if not mt5.initialize(): mt5.initialize()
         positions = mt5.positions_get(symbol=symbol)
@@ -671,9 +710,15 @@ class PyBotBTC:
             cfg = self.get_config_from_gui()
             if not cfg: return # Error en validación
             
-            self.config = cfg # Guardar config para el hilo
+            self.config = cfg 
+            
+            # --- RESETEAR CONTADOR DE SESION ---
+            self.session_profit = 0.0
+            self.update_dashboard(0, 0.0, 0, cfg["MAX_POSITIONS"])
+            # -----------------------------------
+
             self.log("log_config_load", tag="info")
-            self.tabview.set(LANG[self.lang]["tab_monitor"]) # Cambiar a tab monitor
+            self.tabview.set(LANG[self.lang]["tab_monitor"]) 
 
             self.running = True
             threading.Thread(target=self.run, daemon=True).start()
@@ -683,7 +728,7 @@ class PyBotBTC:
             self.running = False
             self.lbl_status.configure(text=LANG[self.lang]["status_stopped"], text_color="gray")
             self.log("log_stop", tag="error", send_tg=True)
-    
+
     def export_log(self):
         file_path = filedialog.asksaveasfilename(
             defaultextension=".txt",
@@ -701,6 +746,6 @@ class PyBotBTC:
 
 if __name__ == "__main__":
     app = ctk.CTk()
-    app.geometry("900x750") 
+    app.geometry("1100x750") # Ajustado el ancho para que quepa la nueva tarjeta
     bot = PyBotBTC(app)
     app.mainloop()
