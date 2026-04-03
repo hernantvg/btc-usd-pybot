@@ -5,6 +5,7 @@ import os
 import threading
 from dotenv import load_dotenv
 
+
 # Cargar credenciales desde tu .env
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
